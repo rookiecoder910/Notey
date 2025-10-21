@@ -24,8 +24,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import com.example.notey.repository.NotesRepository
+import com.example.notey.roomdb.Note
 import com.example.notey.roomdb.NotesDB
 import com.example.notey.screens.DisplayDialog
+import com.example.notey.screens.DisplayNotesList
 import com.example.notey.ui.theme.NoteyTheme
 import com.example.notey.viewmodel.NoteViewModel
 import com.example.notey.viewmodel.NoteViewModelFactory
@@ -141,6 +143,7 @@ class MainActivity : ComponentActivity() {
                         viewModel = noteViewModel,
                         showDialog = showDialog
                     ) { showDialog = false }
+
                 }
             }
         }
@@ -148,7 +151,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun NoteCard(note: com.example.notey.roomdb.Note) {
+fun NoteCard(note: Note) {
     Card(
         modifier = Modifier
             .padding(6.dp)
@@ -172,7 +175,7 @@ fun NoteCard(note: com.example.notey.roomdb.Note) {
                 text = note.description,
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.DarkGray,
-                maxLines = 4
+                maxLines = 10
             )
         }
     }
