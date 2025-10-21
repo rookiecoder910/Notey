@@ -22,7 +22,9 @@ fun NoteListItem(note: Note) {
             colors = CardDefaults.cardColors(
                 containerColor = Color(note.color)
             ),
-        border = BorderStroke(1.dp, Color.Black)
+        border = BorderStroke(1.dp, Color.Black),
+        modifier = Modifier
+            .padding(2.dp)
         )
 
     {
@@ -39,6 +41,8 @@ fun NoteListItem(note: Note) {
             fontSize = 16.sp,
             fontWeight = FontWeight.Normal
             )
+            //color picker
+
 
 
 
