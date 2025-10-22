@@ -58,8 +58,8 @@ fun DisplayDialog(
             text = {
                 // Wrap content in a Column with scrolling
                 Column(modifier = Modifier.verticalScroll(scrollState)) {
-                    // 1. Title Input Field
-                    OutlinedTextField( // Used OutlinedTextField for modern look
+
+                    OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
                         label = { Text(text = "Note Title") },
@@ -85,7 +85,7 @@ fun DisplayDialog(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 3. Color Picker (Horizontal Scroll)
+                    // Color Picker (Horizontal Scroll)
                     Text(
                         text = "Select Background Color:",
                         style = MaterialTheme.typography.labelLarge,
