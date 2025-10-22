@@ -17,10 +17,10 @@ abstract class NotesDB : RoomDatabase(){
 
     //creating a database object
     //The companion object section is
-    // a standard Kotlin way to ensure you only ever have one copy
-    // of the database running at a time. This is called the Singleton Pattern,
-    // and it prevents crashes and data inconsistencies.
-   companion object{
+        // a standard Kotlin way to ensure you only ever have one copy
+        // of the database running at a time. This is called the Singleton Pattern,
+        // and it prevents crashes and data inconsistencies.
+        companion object{
        @Volatile
        private var INSTANCE:NotesDB?=null
         fun getInstance(context: Context):NotesDB{

@@ -26,14 +26,14 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-// --- Utility Function: For formatting the last modified time ---
+
 fun formatTimestamp(timestamp: Long): String {
     val date = java.util.Date(timestamp)
-    // Example format: Oct 22, 2025 at 3:06 PM
+
     val format = SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault())
     return format.format(date)
 }
-// ----------------------------------------------------------------
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -274,7 +274,7 @@ fun NotesViewingSection(
     }
 
     // --- Delete Confirmation Dialog (Appears over the Scaffold) ---
-    if (showDeleteDialog) { // <-- NEW: Dialog control
+    if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Confirm Deletion") },
