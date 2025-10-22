@@ -58,11 +58,11 @@ class MainActivity : ComponentActivity() {
                                     style = MaterialTheme.typography.headlineMedium.copy(
                                         fontWeight = FontWeight.Bold
                                     ),
-                                    color = MaterialTheme.colorScheme.onPrimary
+                                    color = colorScheme.onPrimary
                                 )
                             },
                             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.primary
+                                containerColor = colorScheme.primary
                             )
                         )
                     },
