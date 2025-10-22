@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
-    id("com.google.gms.google-services")
+
 }
 
 android {
@@ -58,12 +58,6 @@ dependencies {
     implementation(libs.androidx.material3)
     //couroutines support for ROOM
     implementation("androidx.room:room-ktx:${room_version}")
-
-    implementation(platform("com.google.firebase:firebase-bom:34.4.0")) // Check for the latest version
-
-   // Add the dependency for the Firebase AI Logic library (which includes Gemini)
-    implementation("com.google.firebase:firebase-ai")
-    implementation("com.google.ai.client.generativeai:generativeai:0.16.0")
 
 
 
