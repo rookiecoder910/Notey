@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,9 +42,15 @@ fun DisplayDialog(
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-
-    var selectedColor by remember { mutableStateOf(Color(0xFFFBCDCF)) }
-
+    val defaultColor = Color(0xFFFBCDCF)
+    var selectedColor by remember { mutableStateOf(defaultColor) }
+    LaunchedEffect(showDialog) {
+        if (showDialog) {
+            title = ""
+            description = ""
+            selectedColor = defaultColor
+        }
+    }
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { onDismiss() },

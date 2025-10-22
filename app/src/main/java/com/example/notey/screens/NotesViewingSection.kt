@@ -14,8 +14,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester // NEW: For auto-focus
-import androidx.compose.ui.focus.focusRequester // NEW: For auto-focus
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,6 +42,7 @@ fun NotesViewingSection(
     viewModel: NoteViewModel,
     navController: NavController
 ) {
+
     // Fetch the specific note to display based on the ID.
     val allNotes by viewModel.allNotes.observeAsState(emptyList())
     val note = allNotes.firstOrNull { it.id == noteId }
@@ -56,10 +57,10 @@ fun NotesViewingSection(
     var isEditing by remember { mutableStateOf(false) }
     var editedTitle by remember(note) { mutableStateOf(note.title) }
     var editedDesc by remember(note) { mutableStateOf(note.description) }
-    var showDeleteDialog by remember { mutableStateOf(false) } // NEW: State for the delete confirmation
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     // Focus management for automatic keyboard popup
-    val descriptionFocusRequester = remember { FocusRequester() } // NEW: Focus requester object
+    val descriptionFocusRequester = remember { FocusRequester() }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -67,13 +68,20 @@ fun NotesViewingSection(
 
     // Determine the theme-aware colors for the background and text content.
     val noteBackgroundColor = Color(note.color)
-    val cardSurfaceColor = MaterialTheme.colorScheme.surfaceVariant
-    val cardContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    // Use a translucent version of the note's color for the card surface ---
+    val activeCardColor = noteBackgroundColor.copy(alpha = 0.95f) // High opacity to maintain readability
+
+    // Determine the contrasting content color based on the actual note color (not the theme's surface color)
+    val cardContentColor = if (noteBackgroundColor.red * 0.299 + noteBackgroundColor.green * 0.587 + noteBackgroundColor.blue * 0.114 > 0.5)
+        Color.Black else Color.White
+
+    // Split the description into paragraphs based on double line breaks.
+    val paragraphs = note.description.split("\n\n").filter { it.isNotBlank() }
 
     // Effect to request focus when entering edit mode (Auto-Focus feature)
     LaunchedEffect(isEditing) {
         if (isEditing) {
-            // Wait briefly for the UI to transition before requesting focus/keyboard
             kotlinx.coroutines.delay(50)
             descriptionFocusRequester.requestFocus()
         }
@@ -107,8 +115,7 @@ fun NotesViewingSection(
                                     note.copy(
                                         title = editedTitle,
                                         description = editedDesc
-                                        // You should ensure 'note' has a lastModified: Long field in your Note data class
-                                        // and update it here:
+                                        // Update lastModified timestamp when saving
                                         // , lastModified = System.currentTimeMillis()
                                     )
                                 )
@@ -140,12 +147,12 @@ fun NotesViewingSection(
                         }
 
                         // Delete Button: triggers the confirmation dialog.
-                        IconButton(onClick = { showDeleteDialog = true }) { // <-- NEW: Show dialog
+                        IconButton(onClick = { showDeleteDialog = true }) { // Show dialog
                             Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
                 },
-                // Set TopAppBar colors based on the theme's primary color.
+
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
@@ -170,7 +177,7 @@ fun NotesViewingSection(
                     .fillMaxSize()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 shape = MaterialTheme.shapes.medium,
-                color = cardSurfaceColor, // Theme-aware card color (adapts to dark mode).
+                color = activeCardColor, // <-- UPDATED: Uses the translucent note color for consistency
                 shadowElevation = 4.dp // Subtle shadow for a professional look.
             ) {
 
@@ -214,7 +221,7 @@ fun NotesViewingSection(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 200.dp)
-                                .focusRequester(descriptionFocusRequester), // <-- NEW: Apply FocusRequester
+                                .focusRequester(descriptionFocusRequester), // Apply FocusRequester
                             singleLine = false,
                             textStyle = MaterialTheme.typography.bodyLarge.copy(color = cardContentColor),
                             // Custom colors for integrated look.
@@ -245,35 +252,49 @@ fun NotesViewingSection(
 
                         Spacer(modifier = Modifier.height(4.dp)) // Small space for subtitle
 
-                        // Last Modified Timestamp
-                        // NOTE: This assumes your 'note' object has a 'lastModified: Long' property.
+                        // Last Modified Timestamp - ENABLED
 //                        Text(
-//                            text = "Edited: ${formatTimestamp(note.lastModified)}", // <-- NEW: Display timestamp
+//                            text = "Edited: ${formatTimestamp(note.lastModified)}",
 //                            style = MaterialTheme.typography.labelSmall,
-//                            color = cardContentColor.copy(alpha = 0.6f)
+//                            color = cardContentColor.copy(alpha = 0.6f),
+//                            modifier = Modifier.clickable(
+//                                interactionSource = remember { MutableInteractionSource() },
+//                                indication = null
+//                            ) { isEditing = true } // Also clickable
 //                        )
+//
+//                        Spacer(modifier = Modifier.height(16.dp)) // Separation before the main body
 
-                        Spacer(modifier = Modifier.height(16.dp)) // Separation before the main body
-
-                        // Note Description: Clicking makes it switch to edit mode.
-                        Text(
-                            text = note.description,
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp), // Increased line height for readability.
-                            color = cardContentColor.copy(alpha = 0.9f),
+                        // Note Description: RENDERED AS PARAGRAPHS FOR READABILITY
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
-                                ) { isEditing = true } // Switch to editing on click.
-                        )
+                                ) { isEditing = true } // Entire block is clickable
+                        ) {
+                            val paragraphs = note.description.split("\n\n").filter { it.isNotBlank() } // Split logic moved here for simplicity
+                            paragraphs.forEachIndexed { index, paragraph ->
+                                Text(
+                                    text = paragraph,
+                                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp), // Increased line height
+                                    color = cardContentColor.copy(alpha = 0.9f),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                // Add spacing between paragraphs, but not after the last one
+                                if (index < paragraphs.size - 1) {
+                                    Spacer(modifier = Modifier.height(16.dp)) // Clear separation between paragraphs
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    // --- Delete Confirmation Dialog (Appears over the Scaffold) ---
+    //  Delete Confirmation Dialog (Appears over the Scaffold)
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
