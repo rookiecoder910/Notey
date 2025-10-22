@@ -70,7 +70,10 @@ fun DisplayDialog(
                         0,
                         title,
                         description,
-                        selectedColor.toArgb()
+                        selectedColor.toArgb(),
+
+
+
 
                     )
                     //insert note into DB

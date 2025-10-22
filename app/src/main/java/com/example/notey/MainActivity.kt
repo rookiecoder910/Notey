@@ -20,8 +20,10 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.ColorUtils
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -59,7 +61,7 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     startDestination = "home"
                 ) {
-                    // ✅ HOME SCREEN
+                    // HOME SCREEN
                     composable("home") {
                         Scaffold(
                             topBar = {
@@ -100,7 +102,7 @@ class MainActivity : ComponentActivity() {
                                         .fillMaxSize()
                                         .padding(16.dp)
                                 ) {
-                                    // Search Bar (disabled placeholder)
+
                                     OutlinedTextField(
                                         value = "",
                                         onValueChange = {},
@@ -180,31 +182,55 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+fun getContrastColor(backgroundColor: Color): Color {
+
+    val argb = backgroundColor.toArgb()
+
+
+    return if (ColorUtils.calculateLuminance(argb) > 0.5) {
+        Color.Black.copy(alpha = 0.9f) // Use slightly transparent black for softer look
+    } else {
+        Color.White.copy(alpha = 0.9f) // Use slightly transparent white for softer look
+    }
+}
+
+
+
 @Composable
 fun NoteCard(note: Note, onClick: () -> Unit) {
+
+    val cardBackgroundColor = Color(note.color)
+
+
+    val contentColor = getContrastColor(cardBackgroundColor)
+
     Card(
         modifier = Modifier
             .padding(6.dp)
             .fillMaxWidth()
             .heightIn(min = 120.dp)
-            .clickable { onClick() }, // 👈 Makes card open details
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(note.color)
+            // Set the dynamic background color
+            containerColor = cardBackgroundColor
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
+            // Apply the contrasting color to the title
             Text(
                 text = note.title,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = contentColor
             )
             Spacer(modifier = Modifier.height(6.dp))
+            // Apply a slightly muted version of the contrasting color to the description
             Text(
                 text = note.description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.DarkGray,
-                maxLines = 10
+                color = contentColor.copy(alpha = 0.8f),
+                maxLines = 5
             )
         }
     }

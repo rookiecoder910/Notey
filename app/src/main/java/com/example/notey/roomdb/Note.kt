@@ -12,4 +12,6 @@ data class Note(
     val description:String,
   val color:Int //stores color as an ARGB integer
 
+
+
 )

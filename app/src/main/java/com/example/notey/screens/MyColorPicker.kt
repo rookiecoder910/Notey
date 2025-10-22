@@ -20,15 +20,21 @@ import androidx.core.graphics.toColorInt
 
 @Composable
 fun MyColorPicker(selectedColor: Color, onColorSelected: (Color) -> Unit) {
-
     val colorsList: List<Color> = listOf(
-        "#f59597",
-        "#FFD52E",
-        "#C5E1A5",
-        "#90CAF9",
-        "#E1BEE7",
-        "#FFCC80",
-        "#E0E0E0"
+        // Muted Pink/Rose
+        "#FBCDCF",
+        // Soft Yellow/Cream
+        "#FFF9C4",
+        // Light Sage Green
+        "#DCF8C8",
+        // Light Sky Blue
+        "#C8E6FB",
+        // Pale Lavender/Mauve
+        "#E8D5F3",
+        // Light Peach/Orange
+        "#FFE0B2",
+        // Off-White/Light Grey
+        "#FAFAFA"
     ).map { hex ->
         Color(hex.toColorInt())
     }
