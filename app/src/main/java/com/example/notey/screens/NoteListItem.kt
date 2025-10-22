@@ -1,6 +1,7 @@
 package com.example.notey.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,7 +17,10 @@ import androidx.compose.ui.unit.sp
 import com.example.notey.roomdb.Note
 
 @Composable
-fun NoteListItem(note: Note) {
+fun NoteListItem(
+    note: Note,
+    onClick: () -> Unit
+) {
     Card(
         elevation = CardDefaults.cardElevation(12.dp),
             colors = CardDefaults.cardColors(
@@ -25,6 +29,7 @@ fun NoteListItem(note: Note) {
         border = BorderStroke(1.dp, Color.Black),
         modifier = Modifier
             .padding(2.dp)
+            .clickable { onClick() }
         )
 
     {
