@@ -45,6 +45,7 @@ dependencies {
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.generativeai)
     val room_version = "2.7.2"
     implementation("androidx.room:room-runtime:$room_version")
     ksp("androidx.room:room-compiler:2.5.0")

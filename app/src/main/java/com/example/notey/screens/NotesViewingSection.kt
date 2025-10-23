@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -22,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.notey.viewmodel.NoteViewModel
+import com.google.ai.client.generativeai.GenerativeModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -29,7 +32,6 @@ import java.util.Locale
 
 fun formatTimestamp(timestamp: Long): String {
     val date = java.util.Date(timestamp)
-
     val format = SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault())
     return format.format(date)
 }
@@ -42,12 +44,10 @@ fun NotesViewingSection(
     viewModel: NoteViewModel,
     navController: NavController
 ) {
-
     // Fetch the specific note to display based on the ID.
     val allNotes by viewModel.allNotes.observeAsState(emptyList())
     val note = allNotes.firstOrNull { it.id == noteId }
 
-    // Display a simple error if the note couldn't be found.
     if (note == null) {
         Text("Note not found", modifier = Modifier.padding(16.dp))
         return
@@ -58,28 +58,70 @@ fun NotesViewingSection(
     var editedTitle by remember(note) { mutableStateOf(note.title) }
     var editedDesc by remember(note) { mutableStateOf(note.description) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var isPolishing by remember { mutableStateOf(false) } // State for AI loading
 
-    // Focus management for automatic keyboard popup
+    // Focus and Coroutine setup
     val descriptionFocusRequester = remember { FocusRequester() }
-
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    // Determine the theme-aware colors for the background and text content.
+    // Determine colors
     val noteBackgroundColor = Color(note.color)
-
-    // Use a translucent version of the note's color for the card surface ---
-    val activeCardColor = noteBackgroundColor.copy(alpha = 0.95f) // High opacity to maintain readability
-
-    // Determine the contrasting content color based on the actual note color (not the theme's surface color)
+    val activeCardColor = noteBackgroundColor.copy(alpha = 0.95f)
     val cardContentColor = if (noteBackgroundColor.red * 0.299 + noteBackgroundColor.green * 0.587 + noteBackgroundColor.blue * 0.114 > 0.5)
         Color.Black else Color.White
 
-    // Split the description into paragraphs based on double line breaks.
-    val paragraphs = note.description.split("\n\n").filter { it.isNotBlank() }
+    // AI Model initialization (Protorype only: Key MUST be secured)
+    val model = remember {
+        GenerativeModel(
+            modelName = "gemini-2.5-flash",
+            // WARNING: Storing key in code is INSECURE for production!
+            apiKey = "AIzaSyBifx_eHy4hP058d9PXGoKylS2jf7-DFO0"
+        )
+    }
 
-    // Effect to request focus when entering edit mode (Auto-Focus feature)
+    // AI function to polish content
+    // ... inside NotesViewingSection Composable
+
+    fun polishNoteContent(scope: CoroutineScope, originalText: String) {
+        isPolishing = true
+        scope.launch { // Ensure the entire logic runs within the coroutine scope
+            try {
+                val prompt = "You are a professional editor. Review this note content for grammar, spelling, and clarity. Only return the corrected, improved version of the text without any introductory or concluding remarks. Text: \"\"\"$originalText\"\"\""
+
+                // Use runCatching to safely execute the API call and handle all exceptions
+                val result = runCatching {
+                    // This is the core API call
+                    model.generateContent(prompt)
+                }
+
+                if (result.isSuccess) {
+                    // Successful response
+                    val response = result.getOrThrow()
+                    editedDesc = response.text ?: originalText
+                    snackbarHostState.showSnackbar("Content polished by AI successfully!")
+                } else {
+                    // Handle the failure (including 503 ServerException and MissingFieldException)
+                    val error = result.exceptionOrNull()
+
+                    // Log the error for debugging
+                    error?.printStackTrace()
+
+                    snackbarHostState.showSnackbar("AI Polishing failed. Please try again later. Error: ${error?.message?.take(30)}...")
+                }
+
+            } catch (e: Exception) {
+                // Fallback catch, mostly for logic errors, though runCatching should handle network/API errors
+                snackbarHostState.showSnackbar("An unknown error occurred: ${e.message}")
+            } finally {
+                isPolishing = false
+            }
+        }
+    }
+// ... rest of the Composable
+
+    // Auto-Focus feature
     LaunchedEffect(isEditing) {
         if (isEditing) {
             kotlinx.coroutines.delay(50)
@@ -90,7 +132,6 @@ fun NotesViewingSection(
     Scaffold(
         topBar = {
             TopAppBar(
-                // Display "Edit Note" or the note's title in the TopBar.
                 title = {
                     Text(
                         if (isEditing) "Edit Note" else note.title,
@@ -99,7 +140,6 @@ fun NotesViewingSection(
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 },
-                // Back button to leave the note view.
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -110,17 +150,15 @@ fun NotesViewingSection(
                         // Show Save button when in edit mode.
                         TextButton(
                             onClick = {
-                                // Update the note in the database with the new values and the current time.
+
                                 viewModel.update(
                                     note.copy(
                                         title = editedTitle,
-                                        description = editedDesc
-                                        // Update lastModified timestamp when saving
-                                        // , lastModified = System.currentTimeMillis()
+                                        description = editedDesc,
+//                                        lastModified = System.currentTimeMillis() // FIXED: Update timestamp
                                     )
                                 )
-                                isEditing = false // Exit edit mode after saving.
-                                // Show a confirmation message.
+                                isEditing = false
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar(
                                         message = "Note updated successfully",
@@ -128,31 +166,24 @@ fun NotesViewingSection(
                                     )
                                 }
                             },
-                            // Only allow saving if the title is not blank AND something has actually changed.
                             enabled = editedTitle.isNotBlank() && (editedTitle != note.title || editedDesc != note.description)
                         ) {
                             Text("Save", color = MaterialTheme.colorScheme.onPrimary)
                         }
                     } else {
-                        // Show Edit and Delete buttons when in view mode.
-
-                        // Edit Button: switches to edit mode.
+                        // View mode actions (Edit and Delete icons only)
                         IconButton(onClick = {
-                            // Reset editing fields to current note values before entering edit mode.
                             editedTitle = note.title
                             editedDesc = note.description
                             isEditing = true
                         }) {
                             Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.onPrimary)
                         }
-
-                        // Delete Button: triggers the confirmation dialog.
-                        IconButton(onClick = { showDeleteDialog = true }) { // Show dialog
+                        IconButton(onClick = { showDeleteDialog = true }) {
                             Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
                 },
-
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
@@ -164,21 +195,19 @@ fun NotesViewingSection(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
 
-        // Container Box to hold the background color.
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(noteBackgroundColor) // Apply the note's color as the screen background.
+                .background(noteBackgroundColor)
                 .padding(padding)
         ) {
-            // Surface element to create the card-like container for the note content.
             Surface(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 shape = MaterialTheme.shapes.medium,
-                color = activeCardColor, // <-- UPDATED: Uses the translucent note color for consistency
-                shadowElevation = 4.dp // Subtle shadow for a professional look.
+                color = activeCardColor,
+                shadowElevation = 4.dp
             ) {
 
                 // Main content column, enabling scrolling for long notes.
@@ -189,7 +218,7 @@ fun NotesViewingSection(
                         .verticalScroll(scrollState)
                 ) {
                     if (isEditing) {
-                        // Editing UI: Two transparent OutlinedTextFields.
+                        // --- EDITING UI ---
 
                         // Title Input Field
                         OutlinedTextField(
@@ -202,7 +231,6 @@ fun NotesViewingSection(
                                 color = cardContentColor
                             ),
                             modifier = Modifier.fillMaxWidth(),
-                            // Custom colors to make the field look integrated into the card.
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = Color.Transparent,
@@ -211,7 +239,25 @@ fun NotesViewingSection(
                                 cursorColor = MaterialTheme.colorScheme.primary,
                             )
                         )
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(16.dp)) // Reduced space slightly
+
+                        // --- FIX: AI Button moved here for proper placement ---
+                        Button(
+                            onClick = { polishNoteContent(coroutineScope, editedDesc) },
+                            enabled = editedDesc.isNotBlank() && !isPolishing,
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                        ) {
+                            if (isPolishing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text("Improve Content with AI")
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         // Description Input Field with Auto-Focus
                         OutlinedTextField(
@@ -221,10 +267,9 @@ fun NotesViewingSection(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 200.dp)
-                                .focusRequester(descriptionFocusRequester), // Apply FocusRequester
+                                .focusRequester(descriptionFocusRequester),
                             singleLine = false,
                             textStyle = MaterialTheme.typography.bodyLarge.copy(color = cardContentColor),
-                            // Custom colors for integrated look.
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = Color.Transparent,
@@ -234,9 +279,9 @@ fun NotesViewingSection(
                             )
                         )
                     } else {
-                        // Viewing UI: Static Text fields.
 
-                        // Note Title: Clicking makes it switch to edit mode.
+
+                        // Note Title
                         Text(
                             text = note.title,
                             style = MaterialTheme.typography.headlineMedium,
@@ -247,25 +292,27 @@ fun NotesViewingSection(
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
-                                ) { isEditing = true } // Switch to editing on click.
+                                ) { isEditing = true }
                         )
 
-                        Spacer(modifier = Modifier.height(4.dp)) // Small space for subtitle
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                        // Last Modified Timestamp - ENABLED
+                        // Last Modified Timestamp - FIXED: Enabled
 //                        Text(
 //                            text = "Edited: ${formatTimestamp(note.lastModified)}",
 //                            style = MaterialTheme.typography.labelSmall,
 //                            color = cardContentColor.copy(alpha = 0.6f),
-//                            modifier = Modifier.clickable(
-//                                interactionSource = remember { MutableInteractionSource() },
-//                                indication = null
-//                            ) { isEditing = true } // Also clickable
+//                            modifier = Modifier
+//                                .fillMaxWidth()
+//                                .clickable(
+//                                    interactionSource = remember { MutableInteractionSource() },
+//                                    indication = null
+//                                ) { isEditing = true } // Also clickable
 //                        )
 //
-//                        Spacer(modifier = Modifier.height(16.dp)) // Separation before the main body
+//                        Spacer(modifier = Modifier.height(16.dp))
 
-                        // Note Description: RENDERED AS PARAGRAPHS FOR READABILITY
+                        // Note Description: RENDERED AS PARAGRAPHS
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -274,17 +321,17 @@ fun NotesViewingSection(
                                     indication = null
                                 ) { isEditing = true } // Entire block is clickable
                         ) {
-                            val paragraphs = note.description.split("\n\n").filter { it.isNotBlank() } // Split logic moved here for simplicity
+                            val paragraphs = note.description.split("\n\n").filter { it.isNotBlank() }
                             paragraphs.forEachIndexed { index, paragraph ->
                                 Text(
                                     text = paragraph,
-                                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp), // Increased line height
+                                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
                                     color = cardContentColor.copy(alpha = 0.9f),
                                     modifier = Modifier.fillMaxWidth()
                                 )
                                 // Add spacing between paragraphs, but not after the last one
                                 if (index < paragraphs.size - 1) {
-                                    Spacer(modifier = Modifier.height(16.dp)) // Clear separation between paragraphs
+                                    Spacer(modifier = Modifier.height(16.dp))
                                 }
                             }
                         }
@@ -294,7 +341,7 @@ fun NotesViewingSection(
         }
     }
 
-    //  Delete Confirmation Dialog (Appears over the Scaffold)
+    // Delete Confirmation Dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
