@@ -1,13 +1,21 @@
 package com.example.notey.screens
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState // NEW for faux progress
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape // NEW for custom shape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Build
+
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -25,6 +33,7 @@ import androidx.navigation.NavController
 import com.example.notey.viewmodel.NoteViewModel
 import com.google.ai.client.generativeai.GenerativeModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -60,6 +69,14 @@ fun NotesViewingSection(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var isPolishing by remember { mutableStateOf(false) } // State for AI loading
 
+    // PROGRESS BAR STATE (For "Faux" Progress)
+    var progress by remember { mutableStateOf(0.0f) }
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
+        label = "ProgressAnimation"
+    )
+
     // Focus and Coroutine setup
     val descriptionFocusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -76,55 +93,67 @@ fun NotesViewingSection(
     val model = remember {
         GenerativeModel(
             modelName = "gemini-2.5-flash",
-            // WARNING: Storing key in code is INSECURE for production!
             apiKey = "AIzaSyBifx_eHy4hP058d9PXGoKylS2jf7-DFO0"
         )
     }
 
-    // AI function to polish content
-    // ... inside NotesViewingSection Composable
+    // Function to start the visual progress bar animation
+    fun startProgressAnimation(scope: CoroutineScope) {
+        progress = 0.0f
+        scope.launch {
+            val duration = 5000L
+            val steps = 50
+            val delayTime = duration / steps
+            val increment = 0.9f / steps
+
+            for (i in 1..steps) {
+                if (!isPolishing) break
+                progress += increment
+                if (progress > 0.9f) progress = 0.9f
+                delay(delayTime)
+            }
+        }
+    }
+
 
     fun polishNoteContent(scope: CoroutineScope, originalText: String) {
         isPolishing = true
-        scope.launch { // Ensure the entire logic runs within the coroutine scope
+        startProgressAnimation(scope) // Start the faux progress animation
+
+        scope.launch {
             try {
                 val prompt = "You are a professional editor. Review this note content for grammar, spelling, and clarity. Only return the corrected, improved version of the text without any introductory or concluding remarks. Text: \"\"\"$originalText\"\"\""
 
-                // Use runCatching to safely execute the API call and handle all exceptions
                 val result = runCatching {
-                    // This is the core API call
                     model.generateContent(prompt)
                 }
 
+                progress = 1.0f // Progress hits 100% when response is received
+
                 if (result.isSuccess) {
-                    // Successful response
                     val response = result.getOrThrow()
                     editedDesc = response.text ?: originalText
                     snackbarHostState.showSnackbar("Content polished by AI successfully!")
                 } else {
-                    // Handle the failure (including 503 ServerException and MissingFieldException)
                     val error = result.exceptionOrNull()
-
-                    // Log the error for debugging
                     error?.printStackTrace()
-
-                    snackbarHostState.showSnackbar("AI Polishing failed. Please try again later. Error: ${error?.message?.take(30)}...")
+                    snackbarHostState.showSnackbar("AI Polishing failed. Please try again later. Error: ${error?.message?.take(50) ?: "Unknown API Error."}")
                 }
 
             } catch (e: Exception) {
-                // Fallback catch, mostly for logic errors, though runCatching should handle network/API errors
                 snackbarHostState.showSnackbar("An unknown error occurred: ${e.message}")
             } finally {
+                delay(500L) // Show 100% progress briefly
                 isPolishing = false
+                progress = 0.0f
             }
         }
     }
-// ... rest of the Composable
 
-    // Auto-Focus feature
+
     LaunchedEffect(isEditing) {
         if (isEditing) {
-            kotlinx.coroutines.delay(50)
+            delay(50)
             descriptionFocusRequester.requestFocus()
         }
     }
@@ -150,12 +179,11 @@ fun NotesViewingSection(
                         // Show Save button when in edit mode.
                         TextButton(
                             onClick = {
-
                                 viewModel.update(
                                     note.copy(
                                         title = editedTitle,
                                         description = editedDesc,
-//                                        lastModified = System.currentTimeMillis() // FIXED: Update timestamp
+//                                        lastModified = System.currentTimeMillis()
                                     )
                                 )
                                 isEditing = false
@@ -218,7 +246,7 @@ fun NotesViewingSection(
                         .verticalScroll(scrollState)
                 ) {
                     if (isEditing) {
-                        // --- EDITING UI ---
+
 
                         // Title Input Field
                         OutlinedTextField(
@@ -239,27 +267,78 @@ fun NotesViewingSection(
                                 cursorColor = MaterialTheme.colorScheme.primary,
                             )
                         )
-                        Spacer(modifier = Modifier.height(16.dp)) // Reduced space slightly
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        // --- FIX: AI Button moved here for proper placement ---
-                        Button(
+
+                        ElevatedButton(
                             onClick = { polishNoteContent(coroutineScope, editedDesc) },
                             enabled = editedDesc.isNotBlank() && !isPolishing,
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+
+                            // Fully rounded pill shape
+                            shape = RoundedCornerShape(percent = 50),
+
+                            // Removed strong shadow for the transparent, modern effect
+                            elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 0.dp),
+
+                            colors = ButtonDefaults.elevatedButtonColors(
+                                // Set a vibrant color with 75% opacity for the transparent look
+                                containerColor = Color(0xFF673AB7).copy(alpha = 0.75f),
+                                contentColor = Color.White
+                            ),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            if (isPolishing) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Text("Improve Content with AI")
+                            // This Box allows us to overlay the LinearProgressIndicator
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                // 1. Progress Bar (Determinate Faux Progress)
+                                if (isPolishing) {
+                                    LinearProgressIndicator(
+                                        progress = { animatedProgress },
+                                        modifier = Modifier
+                                            .fillMaxSize(),
+                                        // Use a vibrant color for the bar itself
+                                        color = Color(0xFFC7F000).copy(alpha = 0.8f),
+                                        trackColor = Color.Transparent
+                                    )
+                                }
+
+                                // 2. Button Content (Text/Icon)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier
+                                        .padding(horizontal = 24.dp)
+                                        .fillMaxWidth()
+                                ) {
+                                    if (isPolishing) {
+                                        // Show percentage progress visually
+                                        Text(
+                                            text = "Polishing... ${(animatedProgress * 100).toInt()}%",
+                                            fontWeight = FontWeight.Bold,
+                                            // Text contrast adjustment over the progress bar
+                                            color = if (animatedProgress > 0.6) Color.Black else Color.White
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.Build,
+                                            contentDescription = "Improve Content",
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Improve Content with AI", fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
                             }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
 
                         // Description Input Field with Auto-Focus
+                        // Crossfade animation should wrap the OutlinedTextField if you want the text to fade in
                         OutlinedTextField(
                             value = editedDesc,
                             onValueChange = { editedDesc = it },
@@ -279,7 +358,7 @@ fun NotesViewingSection(
                             )
                         )
                     } else {
-
+                        // Viewing UI: Static Text fields.
 
                         // Note Title
                         Text(
@@ -292,12 +371,12 @@ fun NotesViewingSection(
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
-                                ) { isEditing = true }
+                                ) { isEditing = true } // Switch to editing on click.
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
 
-                        // Last Modified Timestamp - FIXED: Enabled
+                        // Last Modified Timestamp - ENABLED
 //                        Text(
 //                            text = "Edited: ${formatTimestamp(note.lastModified)}",
 //                            style = MaterialTheme.typography.labelSmall,
