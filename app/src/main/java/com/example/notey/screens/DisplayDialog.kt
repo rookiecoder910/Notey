@@ -133,7 +133,7 @@ fun DisplayDialog(
                     Text(text = "Cancel")
                 }
             },
-            shape = RoundedCornerShape(20.dp) // Use rounded shape for the dialog box itself
+            shape = RoundedCornerShape(20.dp)
         )
     }
 }
