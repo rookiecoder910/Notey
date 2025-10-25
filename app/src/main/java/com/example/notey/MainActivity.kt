@@ -225,7 +225,7 @@ fun NoteCard(note: Note, onClick: () -> Unit) {
                 color = contentColor
             )
             Spacer(modifier = Modifier.height(6.dp))
-            // Apply a slightly muted version of the contrasting color to the description
+
             Text(
                 text = note.description,
                 style = MaterialTheme.typography.bodyMedium,
