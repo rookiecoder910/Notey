@@ -78,7 +78,7 @@ fun DisplayDialog(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 2. Description Input Field
+                    //  Description Input Field
                     OutlinedTextField( // Used OutlinedTextField for modern look
                         value = description,
                         onValueChange = { description = it },
