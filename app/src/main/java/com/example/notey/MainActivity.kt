@@ -188,9 +188,9 @@ fun getContrastColor(backgroundColor: Color): Color {
 
 
     return if (ColorUtils.calculateLuminance(argb) > 0.5) {
-        Color.Black.copy(alpha = 0.9f) // Use slightly transparent black for softer look
+        Color.Black.copy(alpha = 0.9f)
     } else {
-        Color.White.copy(alpha = 0.9f) // Use slightly transparent white for softer look
+        Color.White.copy(alpha = 0.9f)
     }
 }
 
