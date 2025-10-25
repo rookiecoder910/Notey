@@ -200,7 +200,7 @@ fun NotesViewingSection(
                             Text("Save", color = MaterialTheme.colorScheme.onPrimary)
                         }
                     } else {
-                        // View mode actions (Edit and Delete icons only)
+                        // View mode actions
                         IconButton(onClick = {
                             editedTitle = note.title
                             editedDesc = note.description
