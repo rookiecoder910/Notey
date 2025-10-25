@@ -128,7 +128,7 @@ fun DisplayDialog(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { onDismiss() }) // Used TextButton for a cleaner look
+                TextButton(onClick = { onDismiss() })
                 {
                     Text(text = "Cancel")
                 }
