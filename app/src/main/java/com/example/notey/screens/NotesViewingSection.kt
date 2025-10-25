@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
 
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -31,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.notey.viewmodel.NoteViewModel
+
 import com.google.ai.client.generativeai.GenerativeModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -69,7 +69,7 @@ fun NotesViewingSection(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var isPolishing by remember { mutableStateOf(false) } // State for AI loading
 
-    // PROGRESS BAR STATE (For "Faux" Progress)
+    // PROGRESS BAR STATE
     var progress by remember { mutableStateOf(0.0f) }
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
@@ -89,11 +89,12 @@ fun NotesViewingSection(
     val cardContentColor = if (noteBackgroundColor.red * 0.299 + noteBackgroundColor.green * 0.587 + noteBackgroundColor.blue * 0.114 > 0.5)
         Color.Black else Color.White
 
-    // AI Model initialization (Protorype only: Key MUST be secured)
+    // AI Model initialization
     val model = remember {
         GenerativeModel(
             modelName = "gemini-2.5-flash",
-            apiKey = "AIzaSyBifx_eHy4hP058d9PXGoKylS2jf7-DFO0"
+            apiKey =" AIzaSyBifx_eHy4hP058d9PXGoKylS2jf7-DFO0"
+
         )
     }
 
