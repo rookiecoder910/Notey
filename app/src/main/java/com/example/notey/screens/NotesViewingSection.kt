@@ -119,7 +119,7 @@ fun NotesViewingSection(
 
     fun polishNoteContent(scope: CoroutineScope, originalText: String) {
         isPolishing = true
-        startProgressAnimation(scope) // Start the faux progress animation
+        startProgressAnimation(scope)
 
         scope.launch {
             try {
