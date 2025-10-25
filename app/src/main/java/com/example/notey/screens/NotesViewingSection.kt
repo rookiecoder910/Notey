@@ -26,10 +26,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.notey.viewmodel.NoteViewModel
+import com.google.ai.client.generativeai.BuildConfig
 
 import com.google.ai.client.generativeai.GenerativeModel
 import kotlinx.coroutines.CoroutineScope
@@ -93,7 +95,8 @@ fun NotesViewingSection(
     val model = remember {
         GenerativeModel(
             modelName = "gemini-2.5-flash",
-            apiKey =" AIzaSyBifx_eHy4hP058d9PXGoKylS2jf7-DFO0"
+            apiKey = com.example.notey.BuildConfig.API_KEY
+
 
         )
     }
@@ -167,7 +170,7 @@ fun NotesViewingSection(
                         if (isEditing) "Edit Note" else note.title,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        overflow =TextOverflow.Ellipsis
                     )
                 },
                 navigationIcon = {
