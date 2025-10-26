@@ -71,7 +71,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    //couroutines support for ROOM
+
     implementation("androidx.room:room-ktx:${room_version}")
 
 
