@@ -187,7 +187,7 @@ fun NotesViewingSection(
                                     note.copy(
                                         title = editedTitle,
                                         description = editedDesc,
-//                                        lastModified = System.currentTimeMillis()
+                                        lastModified = System.currentTimeMillis()
                                     )
                                 )
                                 isEditing = false
@@ -381,19 +381,19 @@ fun NotesViewingSection(
                         Spacer(modifier = Modifier.height(4.dp))
 
                         // Last Modified Timestamp - ENABLED
-//                        Text(
-//                            text = "Edited: ${formatTimestamp(note.lastModified)}",
-//                            style = MaterialTheme.typography.labelSmall,
-//                            color = cardContentColor.copy(alpha = 0.6f),
-//                            modifier = Modifier
-//                                .fillMaxWidth()
-//                                .clickable(
-//                                    interactionSource = remember { MutableInteractionSource() },
-//                                    indication = null
-//                                ) { isEditing = true } // Also clickable
-//                        )
-//
-//                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Edited: ${formatTimestamp(note.lastModified)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cardContentColor.copy(alpha = 0.6f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) { isEditing = true } // Also clickable
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         // Note Description: RENDERED AS PARAGRAPHS
                         Column(

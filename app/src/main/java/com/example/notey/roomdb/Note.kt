@@ -11,7 +11,7 @@ data class Note(
     val title:String,
     val description:String,
   val color:Int, //stores color as an ARGB integer
-//    val lastModified:Long
+    val lastModified:Long
 
 
 

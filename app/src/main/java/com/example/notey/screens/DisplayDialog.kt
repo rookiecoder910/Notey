@@ -112,6 +112,7 @@ fun DisplayDialog(
                             title = title,
                             description = description,
                             color = selectedColor.toArgb(),
+                            lastModified = System.currentTimeMillis()
 
 
                         )

@@ -35,6 +35,7 @@ import com.example.notey.roomdb.Note
 import com.example.notey.roomdb.NotesDB
 import com.example.notey.screens.DisplayDialog
 import com.example.notey.screens.NotesViewingSection
+import com.example.notey.screens.formatTimestamp
 import com.example.notey.ui.theme.NoteyTheme
 import com.example.notey.viewmodel.NoteViewModel
 import com.example.notey.viewmodel.NoteViewModelFactory
@@ -231,6 +232,15 @@ fun NoteCard(note: Note, onClick: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = contentColor.copy(alpha = 0.8f),
                 maxLines = 5
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Edited: ${formatTimestamp(note.lastModified)}",
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                color = contentColor.copy(alpha =1f),
+
             )
         }
     }
