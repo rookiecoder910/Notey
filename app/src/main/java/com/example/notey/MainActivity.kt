@@ -12,8 +12,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -21,7 +24,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import androidx.lifecycle.ViewModelProvider
@@ -39,6 +44,7 @@ import com.example.notey.screens.formatTimestamp
 import com.example.notey.ui.theme.NoteyTheme
 import com.example.notey.viewmodel.NoteViewModel
 import com.example.notey.viewmodel.NoteViewModelFactory
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
@@ -56,7 +62,25 @@ class MainActivity : ComponentActivity() {
             NoteyTheme {
                 val navController = rememberNavController()
                 var showDialog by remember { mutableStateOf(false) }
-                val notes by noteViewModel.allNotes.observeAsState(emptyList())
+
+                // 💡 Search state for the OutlinedTextField
+                var searchQuery by remember { mutableStateOf("") }
+
+                val allNotes by noteViewModel.allNotes.observeAsState(emptyList())
+
+                // 💡 Filtering Logic: Filter the list based on the search query
+                val filteredNotes = remember(allNotes, searchQuery) {
+                    if (searchQuery.isBlank()) {
+                        allNotes
+                    } else {
+                        allNotes.filter { note ->
+                            // Search by title or description, ignoring case
+                            note.title.contains(searchQuery, ignoreCase = true) ||
+                                    note.description.contains(searchQuery, ignoreCase = true)
+                        }
+                    }
+                }
+
 
                 NavHost(
                     navController = navController,
@@ -101,17 +125,29 @@ class MainActivity : ComponentActivity() {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .padding(16.dp)
+                                        .padding(horizontal = 16.dp) // Apply horizontal padding
+                                        .padding(top = 16.dp) // Top padding for content below TopBar
                                 ) {
 
                                     OutlinedTextField(
-                                        value = "",
-                                        onValueChange = {},
+                                        value = searchQuery, // 💡 Bind to search state
+                                        onValueChange = { searchQuery = it }, // 💡 Update search state
                                         placeholder = { Text("Search your notes...") },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(55.dp),
                                         shape = RoundedCornerShape(16.dp),
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Search, contentDescription = "Search")
+                                        },
+                                        // Clear button
+                                        trailingIcon = {
+                                            if (searchQuery.isNotEmpty()) {
+                                                IconButton(onClick = { searchQuery = "" }) {
+                                                    Icon(Icons.Default.Close, contentDescription = "Clear Search")
+                                                }
+                                            }
+                                        },
                                         colors = OutlinedTextFieldDefaults.colors(
                                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -120,18 +156,22 @@ class MainActivity : ComponentActivity() {
                                             cursorColor = MaterialTheme.colorScheme.primary
                                         ),
                                         singleLine = true,
-                                        enabled = false
+                                        keyboardOptions = KeyboardOptions(
+                                            imeAction = ImeAction.Search
+                                        )
+                                        // Removed: enabled = false
                                     )
 
                                     Spacer(modifier = Modifier.height(16.dp))
 
-                                    AnimatedVisibility(visible = notes.isNotEmpty()) {
+                                    // 💡 Use the filtered list for display
+                                    AnimatedVisibility(visible = filteredNotes.isNotEmpty()) {
                                         LazyVerticalGrid(
                                             columns = GridCells.Adaptive(160.dp),
                                             modifier = Modifier.fillMaxSize(),
                                             contentPadding = PaddingValues(4.dp)
                                         ) {
-                                            items(notes) { note ->
+                                            items(filteredNotes) { note -> // Using filteredNotes
                                                 NoteCard(
                                                     note = note,
                                                     onClick = {
@@ -142,7 +182,22 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
 
-                                    AnimatedVisibility(visible = notes.isEmpty()) {
+                                    // 💡 Display if no notes match the search
+                                    AnimatedVisibility(visible = filteredNotes.isEmpty() && allNotes.isNotEmpty() && searchQuery.isNotEmpty()) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "No notes match \"$searchQuery\"",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                color = Color.Gray
+                                            )
+                                        }
+                                    }
+
+                                    // Original 'No notes yet' message (when no search is active)
+                                    AnimatedVisibility(visible = allNotes.isEmpty()) {
                                         Box(
                                             modifier = Modifier.fillMaxSize(),
                                             contentAlignment = Alignment.Center
@@ -237,14 +292,17 @@ fun NoteCard(note: Note, onClick: () -> Unit) {
 
             Text(
 
+                // 💡 Using the new formatRelativeTime function
                 text = "Edited: ${formatRelativeTime(note.lastModified)}",
 
 
-                style = MaterialTheme.typography.labelSmall, // labelSmall is often better than bodySmall for metadata
+                // 💡 Enhanced style for subtlety
+                style = MaterialTheme.typography.labelSmall,
                 maxLines = 1,
 
 
-                color = contentColor.copy(alpha = 0.4f),
+                // 💡 Subtler color
+                color = contentColor.copy(alpha = 0.3f),
             )
         }
     }
