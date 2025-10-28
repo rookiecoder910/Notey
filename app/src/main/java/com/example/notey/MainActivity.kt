@@ -236,11 +236,15 @@ fun NoteCard(note: Note, onClick: () -> Unit) {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Edited: ${formatTimestamp(note.lastModified)}",
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2,
-                color = contentColor.copy(alpha =1f),
 
+                text = "Edited: ${formatRelativeTime(note.lastModified)}",
+
+
+                style = MaterialTheme.typography.labelSmall, // labelSmall is often better than bodySmall for metadata
+                maxLines = 1,
+
+
+                color = contentColor.copy(alpha = 0.4f),
             )
         }
     }
